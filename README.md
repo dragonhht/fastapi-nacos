@@ -37,6 +37,7 @@ uv add fastapi-nacos
 - `NACOS_CONFIG_NAMESPACE`：配置中心命名空间 ID
 - `NACOS_CONFIG_USERNAME`：配置中心 Nacos 用户名
 - `NACOS_CONFIG_PASSWORD`：配置中心 Nacos 密码
+- `CONFIG_FILE`：应用配置文件路径，默认值为 `conf/app.yml`
 
 ## 快速开始
 

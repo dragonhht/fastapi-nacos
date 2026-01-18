@@ -13,6 +13,7 @@ uv.lock
 
 test_*
 test/
+conf/
 
 .vscode/
 .pytest_cache/
