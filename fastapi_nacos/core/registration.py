@@ -39,7 +39,7 @@ class ServiceRegistry:
         self.heartbeat_stop_events: Dict[str, threading.Event] = {}  # 存储心跳停止事件
         self.heartbeat_interval = 5  # 心跳间隔，单位：秒
     
-    async def register_service(self, 
+    async def register_service(self,
         service_name: str,
         ip: str,
         port: int,
@@ -66,7 +66,6 @@ class ServiceRegistry:
         """
         try:
             self.logger.info(f"开始注册服务: {service_name}，IP: {ip}:{port}")
-            
             # 调用Nacos客户端注册服务
             # 使用RegisterInstanceParam对象
             from v2.nacos.naming.model.naming_param import RegisterInstanceParam

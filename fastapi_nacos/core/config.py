@@ -26,50 +26,52 @@ class ConfigManager:
         self.listener_stop_events: Dict[str, threading.Event] = {}  # 监听器停止事件
         self.listener_interval = 3  # 监听间隔，单位：秒
     
-    async def get_config(self, request: ConfigRequest) -> Optional[str]:
+    async def get_config(self, data_id: str, group: str = "DEFAULT_GROUP") -> Optional[str]:
         """
         获取配置信息
         
         Args:
-            request: 配置获取请求模型
+            data_id: 配置数据ID
+            group: 配置分组，默认DEFAULT_GROUP
             
         Returns:
             Optional[str]: 配置内容
         """
         try:
-            self.logger.info(f"获取配置: data_id={request.data_id}, group={request.group}, namespace={request.namespace}")
+            self.logger.info(f"获取配置: data_id={data_id}, group={group}")
             
             # 调用Nacos客户端获取配置
             from v2.nacos.config.model.config_param import ConfigParam
             config_param = ConfigParam(
-                data_id=request.data_id,
-                group=request.group
+                data_id=data_id,
+                group=group
             )
             content = await self.config_service.get_config(config_param)
             
             self.logger.debug(f"配置获取结果: {content}")
             
             # 更新缓存
-            cache_key = f"{request.namespace}:{request.group}:{request.data_id}"
+            cache_key = f"{group}:{data_id}"
             self.config_cache[cache_key] = content
             
-            self.logger.info(f"配置获取成功: data_id={request.data_id}")
+            self.logger.info(f"配置获取成功: data_id={data_id}")
             return content
         except Exception as e:
-            self.logger.error(f"获取配置失败: data_id={request.data_id}，错误: {str(e)}")
+            self.logger.error(f"获取配置失败: data_id={data_id}，错误: {str(e)}")
             raise ConfigError(f"获取配置失败: {str(e)}") from e
     
-    async def get_config_dict(self, request: ConfigRequest) -> Dict:
+    async def get_config_dict(self, data_id: str, group: str = "DEFAULT_GROUP") -> Dict:
         """
         获取配置信息并转换为字典
         
         Args:
-            request: 配置获取请求模型
+            data_id: 配置数据ID
+            group: 配置分组，默认DEFAULT_GROUP
             
         Returns:
             Dict: 配置内容字典
         """
-        content = await self.get_config(request)
+        content = await self.get_config(data_id, group)
         if not content:
             return {}
         
@@ -83,92 +85,6 @@ class ConfigManager:
             except yaml.YAMLError:
                 self.logger.error(f"配置内容解析失败: data_id={request.data_id}")
                 raise ConfigError(f"配置内容解析失败: data_id={request.data_id}")
-    
-    async def set_config(
-        self,
-        data_id: str,
-        group: str = "DEFAULT_GROUP",
-        content: str = "",
-        namespace: str = ""
-    ) -> bool:
-        """
-        设置配置信息
-        
-        Args:
-            data_id: 配置ID
-            group: 配置分组
-            content: 配置内容
-            namespace: 命名空间ID
-            
-        Returns:
-            bool: 设置是否成功
-        """
-        try:
-            self.logger.info(f"设置配置: data_id={data_id}, group={group}, namespace={namespace}")
-            
-            # 调用Nacos客户端设置配置
-            from v2.nacos.config.model.config_param import ConfigParam
-            config_param = ConfigParam(
-                data_id=data_id,
-                group=group,
-                content=content
-            )
-            result = await self.config_service.publish_config(config_param)
-            
-            if result:
-                # 更新缓存
-                cache_key = f"{namespace}:{group}:{data_id}"
-                self.config_cache[cache_key] = content
-                self.logger.info(f"配置设置成功: data_id={data_id}")
-            else:
-                self.logger.warning(f"配置设置失败: data_id={data_id}")
-            
-            return result
-        except Exception as e:
-            self.logger.error(f"设置配置失败: data_id={data_id}，错误: {str(e)}")
-            raise ConfigError(f"设置配置失败: {str(e)}") from e
-    
-    async def delete_config(
-        self,
-        data_id: str,
-        group: str = "DEFAULT_GROUP",
-        namespace: str = ""
-    ) -> bool:
-        """
-        删除配置信息
-        
-        Args:
-            data_id: 配置ID
-            group: 配置分组
-            namespace: 命名空间ID
-            
-        Returns:
-            bool: 删除是否成功
-        """
-        try:
-            self.logger.info(f"删除配置: data_id={data_id}, group={group}, namespace={namespace}")
-            
-            # 调用Nacos客户端删除配置
-            from v2.nacos.config.model.config_param import ConfigParam
-            config_param = ConfigParam(
-                data_id=data_id,
-                group=group
-            )
-            result = await self.config_service.remove_config(config_param)
-            
-            if result:
-                # 移除缓存
-                cache_key = f"{namespace}:{group}:{data_id}"
-                if cache_key in self.config_cache:
-                    del self.config_cache[cache_key]
-                self.logger.info(f"配置删除成功: data_id={data_id}")
-            else:
-                self.logger.warning(f"配置删除失败: data_id={data_id}")
-            
-            return result
-        except Exception as e:
-            self.logger.error(f"删除配置失败: data_id={data_id}，错误: {str(e)}")
-            raise ConfigError(f"删除配置失败: {str(e)}") from e
     
     async def add_listener(self, listener: ConfigListener) -> bool:
         """
@@ -311,3 +227,10 @@ class ConfigManager:
         except Exception as e:
             self.logger.error(f"清除配置缓存失败: {str(e)}")
             return False
+
+    def shutdown(self):
+        """
+        关闭配置中心客户端
+        """
+        if self.config_service:
+          self.config_service.shutdown()

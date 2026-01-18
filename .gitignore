@@ -7,10 +7,12 @@ wheels/
 *.egg-info
 logs/
 uv.lock
+.env
 # Virtual environments
 .venv
 
 test_*
+test/
 
 .vscode/
 .pytest_cache/

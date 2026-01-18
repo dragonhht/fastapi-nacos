@@ -16,14 +16,35 @@ async def init_nacos_registry_discovery_client(
     初始化全局Nacos注册中心发现客户端
     
     Args:
-        server_addresses: Nacos服务器地址，格式："ip1:port1,ip2:port2"
+        server_addresses: Nacos服务器地址，格式："ip1:port1"
         namespace: Nacos命名空间ID
         username: Nacos用户名
         password: Nacos密码
     """
     global _nacos_client_manager
-    _nacos_client_manager = NacosClientManager()
+    _nacos_client_manager = NacosClientManager.get_instance()
     await _nacos_client_manager.init_registry_discovery_service(
+        server_addresses, namespace, username, password
+    )
+
+async def init_nacos_config_client(
+    server_addresses: str,
+    namespace: str = "public",
+    username: Optional[str] = None,
+    password: Optional[str] = None
+) -> None:
+    """
+    初始化全局Nacos配置中心客户端
+    
+    Args:
+        server_addresses: Nacos服务器地址，格式："ip1:port1"
+        namespace: Nacos命名空间ID
+        username: Nacos用户名
+        password: Nacos密码
+    """
+    global _nacos_client_manager
+    _nacos_client_manager = NacosClientManager.get_instance()
+    await _nacos_client_manager.init_config_service(
         server_addresses, namespace, username, password
     )
 
@@ -40,7 +61,7 @@ def get_nacos_client() -> NacosClientManager:
     if _nacos_client_manager is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Nacos客户端未初始化，请先调用init_nacos_client函数"
+            detail="Nacos客户端未初始化，请先调用init_nacos_registry_discovery_client或init_nacos_config_client函数"
         )
     return _nacos_client_manager
 

@@ -6,7 +6,6 @@ class ConfigRequest(BaseModel):
     """配置获取请求模型"""
     data_id: str
     group: str = Field(default="DEFAULT_GROUP")
-    namespace: str = Field(default="")
 
 
 class ConfigResponse(BaseModel):
