@@ -1,19 +1,11 @@
 """
 项目配置文件解析工具
-
-此模块提供配置文件解析功能，支持以下特性：
-1. 默认从 conf/app.yml 读取 YAML 配置
-2. 支持通过命令行参数 --conf 指定自定义配置文件路径
-3. 双重读取机制：YAML 配置不存在时自动从环境变量获取
-4. 完善的错误处理和友好的错误提示
-5. 返回结构化配置对象，方便参数访问
 """
 
 import os
 import sys
 import yaml
 import re
-from fastapi_nacos.utils.log_utils import log
 from fastapi_nacos.utils.env_utils import get_var
 from typing import Dict, Any, Union
 
@@ -226,8 +218,8 @@ def load_config() -> AppConfig:
         Exception: 配置加载失败
     """
     try:
-        config_path = get_var("CONFIG_FILE", "conf/app.yml")
-        log.info(f"正在加载配置文件: {config_path}")
+        config_path = get_var("FASTAPI_NACOS_CONFIG_FILE", "conf/app.yml")
+        print(f"正在加载配置文件: {config_path}")
         
         # 读取 YAML 配置
         config_dict = read_yaml_file(config_path)
@@ -235,27 +227,27 @@ def load_config() -> AppConfig:
             config_dict = {}
         
         # 合并环境变量
-        merged_config = merge_config(config_dict)
+        # merged_config = merge_config(config_dict)
         
         # 创建配置对象
-        return AppConfig(merged_config)
+        return AppConfig(config_dict)
         
     except FileNotFoundError as e:
-        log.error(f"配置文件不存在: {e}")
-        log.info("使用空配置和环境变量初始化...")
+        print(f"配置文件不存在: {e}")
+        print("使用空配置和环境变量初始化...")
         # 文件不存在时使用空配置，所有值从环境变量获取
         return AppConfig({})
         
     except yaml.YAMLError as e:
-        log.error(f"YAML 格式错误: {e}")
+        print(f"YAML 格式错误: {e}")
         raise RuntimeError(f"配置文件格式错误: {e}")
         
     except IOError as e:
-        log.error(f"文件读取错误: {e}")
+        print(f"文件读取错误: {e}")
         raise RuntimeError(f"配置文件读取失败: {e}")
         
     except Exception as e:
-        log.error(f"配置加载失败: {e}")
+        print(f"配置加载失败: {e}")
         raise RuntimeError(f"配置加载失败: {e}")
 
 

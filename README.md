@@ -1,6 +1,6 @@
 # FastAPI-Nacos SDK
 
-一个适用于 FastAPI Web 应用的通用 SDK，实现与 Nacos 服务的完整集成，包括服务注册、服务发现及配置中心管理功能。
+一个适用于 FastAPI Web 应用的通用 SDK，实现与 Nacos v2 服务的完整集成，包括服务注册、服务发现及配置中心管理功能。
 
 ## 功能特性
 
@@ -27,17 +27,22 @@ uv add fastapi-nacos
 
 ## 配置项
 
-> nacos 的基础配置通过环境变量进行配置。
+> nacos 的基础配置通过yaml文件进行配置，默认文件路径为 `conf/app.yml`，也可以通过环境变量 `FASTAPI_NACOS_CONFIG_FILE` 进行指定。项目中可通过`.env`文件配置项目环境变量。
 
-- `NACOS_DISCOVERY_SERVER_ADDRESSES`：注册中心 Nacos 服务器地址，格式为 `host:port`
-- `NACOS_DISCOVERY_NAMESPACE`：注册中心命名空间 ID
-- `NACOS_DISCOVERY_USERNAME`：注册中心 Nacos 用户名
-- `NACOS_DISCOVERY_PASSWORD`：注册中心 Nacos 密码
-- `NACOS_CONFIG_SERVER_ADDRESSES`：配置中心 Nacos 服务器地址，格式为 `host:port`
-- `NACOS_CONFIG_NAMESPACE`：配置中心命名空间 ID
-- `NACOS_CONFIG_USERNAME`：配置中心 Nacos 用户名
-- `NACOS_CONFIG_PASSWORD`：配置中心 Nacos 密码
-- `CONFIG_FILE`：应用配置文件路径，默认值为 `conf/app.yml`
+- `FASTAPI_NACOS_CONFIG_FILE`：应用配置文件路径
+
+项目yaml文件支持环境变量占位符，优先使用环境变量中的值，不存在则使用默认值，例如：
+
+```yaml
+nacos:
+  discovery:
+    server_addresses: ${NACOS_DISCOVERY_SERVER_ADDRESSES:localhost:8848}
+    namespace: ${NACOS_DISCOVERY_NAMESPACE:public}
+    username: ${NACOS_DISCOVERY_USERNAME:nacos}
+    password: ${NACOS_DISCOVERY_PASSWORD:nacos}
+```
+
+项目支持的配置项目可查看 [conf/app.yml_example](conf/app.yml_example)
 
 ## 快速开始
 

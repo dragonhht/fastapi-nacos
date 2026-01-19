@@ -1,0 +1,21 @@
+# 应用配置
+app:
+  name: fastapi-nacos # 应用名称，不配置将不会进行Nacos注册
+  port: 8000 # 应用端口(只用于Nacos注册，需要与项目启动一致， 不配置注册时将默认使用8000)
+# nacos 配置
+nacos:
+  discovery:
+    server_addresses: ${NACOS_DISCOVERY_SERVER_ADDRESSES:localhost:8848} # Nacos 服务注册中心地址
+    namespace: ${NACOS_DISCOVERY_NAMESPACE:public} # Nacos 命名空间
+    username: ${NACOS_DISCOVERY_USERNAME:nacos} # Nacos 用户名
+    password: ${NACOS_DISCOVERY_PASSWORD:nacos} # Nacos 密码
+  config:
+    server_addresses: ${NACOS_CONFIG_SERVER_ADDRESSES:localhost:8848} # Nacos 配置中心地址
+    namespace: ${NACOS_CONFIG_NAMESPACE:public} # Nacos 命名空间
+    username: ${NACOS_CONFIG_USERNAME:nacos} # Nacos 用户名
+    password: ${NACOS_CONFIG_PASSWORD:nacos} # Nacos 密码
+
+# 日志配置
+logging:
+  level: DEBUG # 日志级别
+  file: logs/app.log # 日志文件路径

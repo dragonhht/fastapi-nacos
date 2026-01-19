@@ -1,13 +1,17 @@
 import sys, os
 from loguru import logger
+from fastapi_nacos.config import app_config
 
 # 获取当前项目的绝对路径
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-log_dir = os.path.join(root_dir, "logs")
-log_level = "DEBUG"
 
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
+# 从配置中获取日志级别
+log_level = app_config.get("logging.level", "DEBUG")
+log_file = app_config.get("logging.file", os.path.join(root_dir, "logs", "app.log"))
+
+log_dir = os.path.dirname(log_file)
+if log_dir:  # 避免空路径
+    os.makedirs(log_dir, exist_ok=True)
 
 class MyLogger:
   def __init__(self):
@@ -27,7 +31,7 @@ class MyLogger:
 
     # 输出到文件的格式
     self.logger.add(
-      log_dir + "/app.log",
+      log_file,
       level=log_level,
       rotation="100 MB", # 每个日志文件最大100MB
       retention="10 days", # 保留10天的日志文件

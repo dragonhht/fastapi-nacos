@@ -2,34 +2,39 @@ from fastapi_nacos.core.manager import NacosClientManager
 from fastapi_nacos.core.dependencies import init_nacos_registry_discovery_client, init_nacos_config_client
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-import fastapi_nacos.utils.env_utils as env_utils
 from fastapi_nacos.utils.log_utils import log
+from fastapi_nacos.config import app_config
+from fastapi_nacos.utils.ip_utils import get_ip_address
+
+global_ip = get_ip_address()
 
 async def init_nacos_registry_client():
   """初始化Nacos注册中心客户端"""
-  if not env_utils.discovery_server_addresses:
-    log.warning("NACOS_DISCOVERY_SERVER_ADDRESSES 未配置，跳过Nacos注册中心客户端初始化")
+  discovery_server_addresses = app_config.get("nacos.discovery.server_addresses")
+  if not discovery_server_addresses:
+    log.warning("nacos.discovery.server_addresses未配置，跳过Nacos注册中心客户端初始化")
   else:
     log.info("开始初始化Nacos注册中心客户端...")
     await init_nacos_registry_discovery_client(
-      server_addresses=env_utils.discovery_server_addresses,
-      namespace=env_utils.discovery_namespace,
-      username=env_utils.discovery_username,
-      password=env_utils.discovery_password
+      server_addresses=discovery_server_addresses,
+      namespace=app_config.get("nacos.discovery.namespace"),
+      username=app_config.get("nacos.discovery.username"),
+      password=app_config.get("nacos.discovery.password")
     )
     log.info("Nacos注册中心客户端初始化完成")
 
 async def init_config_client():
   """初始化Nacos配置中心客户端"""
-  if not env_utils.config_server_addresses:
-    log.warning("NACOS_CONFIG_SERVER_ADDRESSES 未配置，跳过Nacos配置中心客户端初始化")
+  config_server_addresses = app_config.get("nacos.config.server_addresses")
+  if not config_server_addresses:
+    log.warning("nacos.config.server_addresses未配置，跳过Nacos配置中心客户端初始化")
   else:
     log.info("开始初始化Nacos配置中心客户端...")
     await init_nacos_config_client(
-      server_addresses=env_utils.config_server_addresses,
-      namespace=env_utils.config_namespace,
-      username=env_utils.config_username,
-      password=env_utils.config_password
+      server_addresses=config_server_addresses,
+      namespace=app_config.get("nacos.config.namespace"),
+      username=app_config.get("nacos.config.username"),
+      password=app_config.get("nacos.config.password")
     )
     log.info("Nacos配置中心客户端初始化完成")
 
@@ -41,11 +46,13 @@ async def startup():
     # 初始化Nacos配置中心客户端
     await init_config_client()
     # 注册服务
-    await NacosClientManager.get_instance().register_service(
-        service_name="fastapi-service",
-        ip="192.168.1.220",
-        port=8000,
-    )
+    app_name = app_config.get("app.name")
+    if app_name:
+      await NacosClientManager.get_instance().register_service(
+        service_name=app_name,
+        ip=global_ip,
+        port=app_config.get("app.port", 8000),
+      )
   except Exception as e:
     log.error(f"服务注册失败: {e}")
     log.info("注意：这可能是因为Nacos服务器未启动或无法连接。测试应用其他功能仍可正常进行。")
@@ -54,11 +61,13 @@ async def shutdown():
   """自定义关闭逻辑"""
   try:
     # 注销服务
-    await NacosClientManager.get_instance().deregister_service(
-        service_name="fastapi-service",
-        ip="192.168.1.220",
-        port=8000,
-    )
+    app_name = app_config.get("app.name")
+    if app_name:
+      await NacosClientManager.get_instance().deregister_service(
+        service_name=app_name,
+        ip=global_ip,
+        port=app_config.get("app.port", 8000),
+      )
 
     # 关闭Nacos客户端管理器
     NacosClientManager.get_instance().config_shutdown()
