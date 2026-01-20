@@ -46,7 +46,7 @@ nacos:
 
 ## 快速开始
 
-### 1. 初始化 Nacos 客户端
+### 1. 初始化 Nacos 客户端, 自动完成服务注册、服务发现、配置中心功能
 
 ```python
 from fastapi import FastAPI
