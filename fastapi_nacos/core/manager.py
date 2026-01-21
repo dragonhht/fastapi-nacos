@@ -19,6 +19,7 @@ class NacosClientManager:
         初始化Nacos客户端管理器
         """
         NacosClientManager._instance = self
+        print("初始化Nacos客户端管理器-----------------------------------")
 
     async def init_registry_discovery_service(
         self,

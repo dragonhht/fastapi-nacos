@@ -4,6 +4,7 @@ HTTP客户端,类似OpenFeign
 
 from abc import ABC, abstractmethod
 import asyncio
+from dataclasses import dataclass
 from typing import Optional, Any
 import enum
 import httpx
@@ -125,13 +126,44 @@ class FeignClient:
   """
 
   def __init__(self, base_url: str, timeout: float = 5, config: Optional[FeignConfig] = None):
-    # TODO 支持服务名
-    self.base_url = base_url
+    if base_url.startswith("http"):
+      self.base_url = base_url
+      self.service_name = None
+    else:
+      self.base_url = None  # 延迟解析服务名
+      self.service_name = base_url
     self.timeout = timeout
     self.config = config
+    
+  async def _resolve_service_name(self) -> str:
+    """
+    解析服务名到基础URL
+    确保在服务发现之前Nacos客户端已经初始化
+    """
+    if self.base_url:
+      return self.base_url
+    
+    if not self.service_name:
+      raise ServiceDiscoveryError("服务名未设置")
+    
+    # 直接使用全局Nacos客户端实例
+    from fastapi_nacos.core.dependencies import get_nacos_client_no_exception
+    client = get_nacos_client_no_exception()
+    
+    service_discovery = client.discovery
+    if service_discovery is None:
+      raise ServiceDiscoveryError("服务发现组件未初始化，请确保应用配置了Nacos服务发现")
+    
+    service_instance = await service_discovery.choose_one_instance(self.service_name)
+    if service_instance is None:
+      raise ServiceDiscoveryError(f"未找到服务实例: {self.service_name}")
+    
+    # 构建基础URL
+    self.base_url = f"http://{service_instance.ip}:{service_instance.port}"
+    return self.base_url
 
   def __call__(self, cls) -> Any:
-    base_url = self.base_url
+    feign_client = self  # 保存对FeignClient实例的引用
     timeout = self.timeout
     config = self.config
     # 遍历类的所有方法
@@ -147,31 +179,54 @@ class FeignClient:
         def create_feign_method(http_method, path, content_type):
           async def feign_method(self, *args, **kwargs):
             try:
+              # 提取实际参数（处理dataclass对象）
+              actual_kwargs = {}
+              
+              # 检查是否有dataclass类型的参数
+              for key, value in kwargs.items():
+                # 检查是否是dataclass对象
+                if hasattr(value, '__dataclass_fields__'):
+                  # 提取dataclass的字段和值
+                  for field_name, field in value.__dataclass_fields__.items():
+                    actual_kwargs[field_name] = getattr(value, field_name)
+                else:
+                  # 直接使用普通参数
+                  actual_kwargs[key] = value
+              
+              # 解析服务名（如果需要）
+              base_url = await feign_client._resolve_service_name()
+              
               # 构建完整URL,替换路径参数（如 /user/{id}）
-              url = path.format(kwargs)
+              url = path.format(**actual_kwargs)
               # 构造请求参数
               request_kwargs = {}
               
-              request_kwargs["headers"] = {"Content-Type": content_type}
+              # 使用传入的 content_type 参数
+              request_headers = {"Content-Type": content_type}
+              request_kwargs["headers"] = request_headers
               if http_method == "GET":
                 # GET请求的查询参数
-                request_kwargs["params"] = kwargs
+                request_kwargs["params"] = actual_kwargs
               elif http_method == "POST" or http_method == "PUT" or http_method == "PATCH":
                 if content_type == MediaType.JSON.value:
                   # 请求的JSON数据
-                  request_kwargs["json"] = kwargs
+                  request_kwargs["json"] = actual_kwargs
                 elif content_type == MediaType.FORM_URLENCODED.value:
                   # 请求的表单数据
-                  request_kwargs["data"] = kwargs
+                  request_kwargs["data"] = actual_kwargs
                 elif content_type == MediaType.MULTIPART_FORM_DATA.value:
                   # 请求的多部分表单数据
-                  request_kwargs["files"] = kwargs
+                  request_kwargs["files"] = actual_kwargs
               elif http_method == "DELETE":
-                request_kwargs["params"] = kwargs
+                request_kwargs["params"] = actual_kwargs
 
               # 创建HTTP请求
-              # TODO 需要处理base_url以/结尾的情况
-              full_url = f"{base_url}{url}"
+              # 处理base_url以/结尾的情况
+              if base_url.endswith('/'):
+                base_url = base_url[:-1]
+              if url.startswith('/'):
+                url = url[1:]
+              full_url = f"{base_url}/{url}"
               request = httpx.Request(http_method, full_url, **request_kwargs)
               # 应用Feign配置（如果有）
               if config:
@@ -181,9 +236,19 @@ class FeignClient:
                 response = await client.send(request)
               # 检查响应状态码
               response.raise_for_status()
-              # 返回响应JSON数据
-              # TODO 处理其他格式的结果
-              return response.json()
+              
+              # 根据响应的Content-Type返回不同格式的数据
+              response_content_type = response.headers.get('Content-Type', '')
+              
+              if 'application/json' in response_content_type:
+                  # 返回JSON格式数据
+                  return response.json()
+              elif 'text/' in response_content_type:
+                  # 返回文本格式数据
+                  return response.text
+              else:
+                  # 返回原始字节数据
+                  return response.content
             except httpx.HTTPStatusError as e:
               # 处理HTTP状态错误（4xx, 5xx）
               print(f"HTTP错误: {e.response.status_code} - {e.response.text}")
@@ -201,21 +266,52 @@ class FeignClient:
     # 返回增强后的类
     return cls
 
-@FeignClient(base_url="https://www.baidu.com")
-class UserClient:
+@dataclass
+class ReqModel:
+  postId: int = None
+  title: str = ''
+  body: str = ''
+  userId: int = 1
 
-  @GetMapping("/s")
-  async def get_user(self, ie: str, wd: str) -> Any:
+
+@FeignClient(base_url="https://jsonplaceholder.typicode.com")
+class TestClient:
+
+  @GetMapping("/posts")
+  async def get_posts(self) -> list:
     pass
   
-  @GetMapping("/{path}")
-  async def get_users(self, path: str, ie: str, wd: str) -> list:
+  @GetMapping("/posts/{id}")
+  async def get_post(self, id: int) -> dict:
+    pass
+  
+  @GetMapping("/comments")
+  async def get_comments(self, req: ReqModel) -> list:
+    pass
+  @GetMapping("/comments")
+  async def get_comment2s(self, postId: int) -> list:
+    pass
+
+  @PostMapping("/posts")
+  async def post_posts(self, req: ReqModel) -> dict:
+    pass
+  @PutMapping("/posts/{id}")
+  async def put_posts(self, id: int, req: ReqModel) -> dict:
     pass
 
 async def main():
-  client = UserClient()
-  user = await client.get_user(ie="utf-8", wd="fastapi-nacos")
-  print(user)
+  client = TestClient()
+  # print('get_posts')
+  # print(await client.get_posts())
+  # print("获取帖子ID为1的所有评论:")
+  # comments = await client.get_comments(req=ReqModel(postId=1))
+  # print(comments)
+  # print("创建新帖子:")
+  # new_post = await client.post_posts(req=ReqModel(title="新帖子", body="这是新帖子的内容"))
+  # print(new_post)
+  print("更新帖子ID为1的内容:")
+  updated_post = await client.put_posts(id=1, req=ReqModel(title="更新后的帖子", body="这是更新后的帖子内容"))
+  print(updated_post)
 
 if __name__ == "__main__":
   asyncio.run(main())

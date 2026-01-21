@@ -58,48 +58,51 @@ def get_nacos_client() -> NacosClientManager:
     Raises:
         HTTPException: 如果Nacos客户端未初始化
     """
-    if _nacos_client_manager is None:
+    client = NacosClientManager.get_instance()
+    if client is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Nacos客户端未初始化，请先调用init_nacos_registry_discovery_client或init_nacos_config_client函数"
         )
-    return _nacos_client_manager
+    return client
 
-
-def get_service_registry(nacos_client: NacosClientManager = Depends(get_nacos_client)):
+def get_nacos_client_no_exception() -> NacosClientManager:
     """
-    获取服务注册管理器（用于FastAPI依赖注入）
+    获取Nacos客户端实例（用于FastAPI依赖注入）
     
-    Args:
-        nacos_client: Nacos客户端实例
+    Returns:
+        NacosClientManager: Nacos客户端实例
+        
+    Raises:
+        HTTPException: 如果Nacos客户端未初始化
+    """
+    return NacosClientManager.get_instance()
+
+def get_service_registry():
+    """
+    获取服务注册管理器
         
     Returns:
         ServiceRegistry: 服务注册管理器
     """
-    return nacos_client.registry
+    return get_nacos_client().registry
 
 
-def get_service_discovery(nacos_client: NacosClientManager = Depends(get_nacos_client)):
+def get_service_discovery():
     """
-    获取服务发现管理器（用于FastAPI依赖注入）
-    
-    Args:
-        nacos_client: Nacos客户端实例
+    获取服务发现管理器
         
     Returns:
         ServiceDiscovery: 服务发现管理器
     """
-    return nacos_client.discovery
+    return get_nacos_client().discovery
 
 
-def get_config_manager(nacos_client: NacosClientManager = Depends(get_nacos_client)):
+def get_config_manager():
     """
-    获取配置中心管理器（用于FastAPI依赖注入）
-    
-    Args:
-        nacos_client: Nacos客户端实例
+    获取配置中心管理器
         
     Returns:
         ConfigManager: 配置中心管理器
     """
-    return nacos_client.config
+    return get_nacos_client().config
