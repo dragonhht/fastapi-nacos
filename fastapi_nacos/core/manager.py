@@ -4,7 +4,7 @@ from fastapi_nacos.core.registration import ServiceRegistry
 from fastapi_nacos.core.discovery import ServiceDiscovery
 from fastapi_nacos.core.config import ConfigManager
 from fastapi_nacos.models.service import ServiceInstance
-from fastapi_nacos.models.config import ConfigRequest, ConfigListener
+from fastapi_nacos.models.config import ConfigListener
 from fastapi_nacos.utils.log_utils import log, log_dir, log_level
 from fastapi_nacos.utils.exceptions import NacosConnectionError
 
@@ -92,7 +92,7 @@ class NacosClientManager:
                               .build()
                             )
             self.config_service = await NacosConfigService.create_config_service(client_config)
-            self._config = ConfigManager(self.config_service, log)
+            self._config = ConfigManager(self.config_service, log, server_addresses, namespace, username, password)
         except Exception as e:
             log.error(f"初始化配置中心基础服务失败: {str(e)}")
             raise NacosConnectionError(f"初始化配置中心基础服务失败: {str(e)}") from e
@@ -284,12 +284,12 @@ class NacosClientManager:
         )
         return await self.config.add_listener(listener)
 
-    def config_shutdown(self):
+    async def config_shutdown(self):
         """
         关闭配置中心客户端
         """
         if self.config:
-          self.config.shutdown()
+          await self.config.shutdown()
 
     @classmethod
     def get_instance(cls) -> Optional['NacosClientManager']:

@@ -2,6 +2,7 @@ from fastapi_nacos.core.manager import NacosClientManager
 from fastapi_nacos.core.dependencies import init_nacos_registry_discovery_client, init_nacos_config_client
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi_nacos.models.config import ConfigListener
 from fastapi_nacos.utils.log_utils import log
 from fastapi_nacos.config import app_config
 from fastapi_nacos.utils.ip_utils import get_ip_address
@@ -37,6 +38,35 @@ async def init_config_client():
       password=app_config.get("nacos.config.password")
     )
     log.info("Nacos配置中心客户端初始化完成")
+    log.info("开始初始化Nacos配置中心监听...")
+    await init_watch_config()
+
+async def init_watch_config():
+  """初始化Nacos配置中心监听"""
+  imports = app_config.get("nacos.config.imports")
+  if not imports:
+    log.warning("nacos.config.imports未配置，跳过Nacos配置中心监听初始化")
+  else:
+    log.info("开始初始化Nacos配置中心监听...")
+    for item in imports:
+      data_id = item.get("data-id")
+      if not data_id:
+        log.warning(f"nacos.config.imports.item.data-id未配置，跳过Nacos配置中心监听初始化: {item}")
+        continue
+      # 获取配置
+      await NacosClientManager.get_instance().config.get_config(
+        group=item.get("group", "DEFAULT_GROUP"),
+        data_id=data_id,
+      )
+      # TODO 这里需要根据实际情况处理配置内容
+      await NacosClientManager.get_instance().config.add_listener(
+        ConfigListener(
+          group=item.get("group", "DEFAULT_GROUP"),
+          data_id=data_id,
+          callback=lambda tenant, data_id, group, content: print("listen, tenant:{} data_id:{} group:{} content:{}".format(tenant, data_id, group, content))
+        )
+      )
+    log.info("Nacos配置中心监听初始化完成")
 
 async def startup():
   """自定义启动逻辑"""
@@ -70,7 +100,7 @@ async def shutdown():
       )
 
     # 关闭Nacos客户端管理器
-    NacosClientManager.get_instance().config_shutdown()
+    await NacosClientManager.get_instance().config_shutdown()
   except Exception as e:
     log.error(f"服务注销失败: {e}")
     log.info("注意：这可能是因为Nacos服务器未启动或无法连接。测试应用其他功能仍可正常进行。")

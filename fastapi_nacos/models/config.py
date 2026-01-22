@@ -21,6 +21,4 @@ class ConfigListener(BaseModel):
     """配置监听器模型"""
     data_id: str
     group: str
-    namespace: str
     callback: Callable[[str], None]
-    content_type: str = Field(default="text")

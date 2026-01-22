@@ -10,16 +10,24 @@ from fastapi_nacos.utils.exceptions import ConfigError, ConfigListenerError
 class ConfigManager:
     """配置中心管理类"""
     
-    def __init__(self, config_service: NacosConfigService, logger):
+    def __init__(self, config_service: NacosConfigService, logger, server_addresses, namespace, username, password):
         """
         初始化配置中心管理器
         
         Args:
             config_service: Nacos配置服务实例
             logger: 日志记录器
+            server_addresses: Nacos服务器地址列表
+            namespace: Nacos命名空间
+            username: Nacos用户名
+            password: Nacos密码
         """
         self.config_service = config_service
         self.logger = logger
+        self.server_addresses = server_addresses
+        self.namespace = namespace
+        self.username = username
+        self.password = password
         self.config_listeners: Dict[str, ConfigListener] = {}  # 配置监听器
         self.config_cache: Dict[str, str] = {}  # 配置缓存
         self.listener_threads: Dict[str, threading.Thread] = {}  # 监听器线程
@@ -97,7 +105,7 @@ class ConfigManager:
             bool: 添加是否成功
         """
         try:
-            listener_key = f"{listener.namespace}:{listener.group}:{listener.data_id}"
+            listener_key = f"{self.namespace}:{listener.group}:{listener.data_id}"
             self.logger.info(f"添加配置监听器: {listener_key}")
             
             # 保存监听器
@@ -110,7 +118,6 @@ class ConfigManager:
                 group=listener.group,
                 listener=listener.callback
             )
-            
             self.logger.info(f"配置监听器添加成功: {listener_key}")
             return True
         except Exception as e:
@@ -228,9 +235,9 @@ class ConfigManager:
             self.logger.error(f"清除配置缓存失败: {str(e)}")
             return False
 
-    def shutdown(self):
+    async def shutdown(self):
         """
         关闭配置中心客户端
         """
         if self.config_service:
-          self.config_service.shutdown()
+          await self.config_service.shutdown()
