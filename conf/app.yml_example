@@ -14,6 +14,9 @@ nacos:
     namespace: ${NACOS_CONFIG_NAMESPACE:public} # Nacos 命名空间
     username: ${NACOS_CONFIG_USERNAME:nacos} # Nacos 用户名
     password: ${NACOS_CONFIG_PASSWORD:nacos} # Nacos 密码
+    data_id: # Nacos 配置项ID，支持多个
+      - ${app.name}.yml
+
 
 # 日志配置
 logging:

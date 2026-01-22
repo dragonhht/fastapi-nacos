@@ -42,6 +42,17 @@ nacos:
     password: ${NACOS_DISCOVERY_PASSWORD:nacos}
 ```
 
+yaml文件支持变量占位符，引用yaml中其他配置项，例如：
+
+```yaml
+app:
+  name: fastapi-nacos
+nacos:
+  config:
+    data_id:
+      - ${app.name}.yml
+```
+
 项目支持的配置项目可查看 [conf/app.yml_example](conf/app.yml_example)
 
 ## 快速开始

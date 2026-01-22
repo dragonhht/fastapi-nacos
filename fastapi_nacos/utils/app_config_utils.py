@@ -12,33 +12,55 @@ from typing import Dict, Any, Union
 # 环境变量引用正则表达式: ${ENV_VAR:default_value}
 ENV_VAR_PATTERN = re.compile(r'\$\{([^:}]+)(?::([^}]*))?\}')
 
+# 配置参数引用正则表达式: ${config.key}
+CONFIG_VAR_PATTERN = re.compile(r'\$\{([a-zA-Z0-9_.]+)\}')
 
-def substitute_env_vars(value: Union[str, Dict[str, Any], Any]) -> Union[str, Dict[str, Any], Any]:
-    """递归替换字符串中的环境变量引用
+
+def substitute_env_vars(value: Union[str, Dict[str, Any], Any], config_dict: Dict[str, Any] = None) -> Union[str, Dict[str, Any], Any]:
+    """递归替换字符串中的环境变量引用和配置参数引用
     
     Args:
         value: 要处理的值，可以是字符串、字典或其他类型
+        config_dict: 配置字典，用于解析配置参数引用
         
     Returns:
         替换后的对应值
     """
     if isinstance(value, str):
-        # 查找并替换所有环境变量引用
-        def replace_match(match: re.Match) -> str:
+        # 首先替换配置参数引用
+        def replace_config_match(match: re.Match) -> str:
+            config_key = match.group(1)
+            if config_dict is not None:
+                # 从配置字典中查找对应的值
+                if config_key in config_dict:
+                    # 直接查找扁平化的键
+                    return str(config_dict[config_key])
+                else:
+                    # 如果路径不存在，返回原字符串
+                    return match.group(0)
+            else:
+                # 如果没有配置字典，返回原字符串
+                return match.group(0)
+        
+        # 替换配置参数引用
+        result = CONFIG_VAR_PATTERN.sub(replace_config_match, value)
+        
+        # 然后替换环境变量引用
+        def replace_env_match(match: re.Match) -> str:
             env_var = match.group(1)
             default = match.group(2) or ''
             return get_var(env_var, default)
         
-        return ENV_VAR_PATTERN.sub(replace_match, value)
+        return ENV_VAR_PATTERN.sub(replace_env_match, result)
     elif isinstance(value, dict):
         # 递归处理字典
         return {
-            key: substitute_env_vars(val)
+            key: substitute_env_vars(val, config_dict)
             for key, val in value.items()
         }
     elif isinstance(value, list):
         # 递归处理列表
-        return [substitute_env_vars(item) for item in value]
+        return [substitute_env_vars(item, config_dict) for item in value]
     else:
         # 其他类型直接返回
         return value
@@ -157,8 +179,48 @@ def read_yaml_file(file_path: str) -> Dict[str, Any]:
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
-            # 应用环境变量替换
-            return substitute_env_vars(config_dict)
+            
+            # Process the config with multiple iterations to handle dependencies
+            max_iterations = 10
+            current_config = config_dict
+            
+            for iteration in range(max_iterations):
+                # Create a flat lookup of the current config state
+                def create_flat_lookup(cfg, prefix=''):
+                    lookup = {}
+                    for k, v in cfg.items():
+                        full_key = f"{prefix}.{k}" if prefix else k
+                        if isinstance(v, dict):
+                            lookup.update(create_flat_lookup(v, full_key))
+                        elif isinstance(v, list):
+                            # Store the list as-is
+                            lookup[full_key] = v
+                        else:
+                            lookup[full_key] = v
+                    return lookup
+                
+                flat_lookup = create_flat_lookup(current_config)
+                
+                # Process the config with the current flat lookup
+                def process_recursive(obj):
+                    if isinstance(obj, str):
+                        return substitute_env_vars(obj, flat_lookup)
+                    elif isinstance(obj, dict):
+                        return {k: process_recursive(v) for k, v in obj.items()}
+                    elif isinstance(obj, list):
+                        return [process_recursive(item) for item in obj]
+                    else:
+                        return obj
+                
+                new_config = process_recursive(current_config)
+                
+                # If no changes, we're done
+                if new_config == current_config:
+                    break
+                    
+                current_config = new_config
+            
+            return current_config
     except yaml.YAMLError as e:
         raise yaml.YAMLError(f"YAML 格式错误: {e}")
     except IOError as e:

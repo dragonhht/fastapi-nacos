@@ -11,6 +11,7 @@ uv.lock
 # Virtual environments
 .venv
 
+debug*
 test_*
 test/
 conf/*.yml
