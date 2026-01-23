@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Optional, Any
 import enum
 import httpx
+import inspect
 
 class MediaType(enum.Enum):
   """
@@ -176,13 +177,27 @@ class FeignClient:
         content_type = getattr(method, "_content_type", MediaType.JSON.value)
 
         # 定义新的方法用于实现HTTP请求
-        def create_feign_method(http_method, path, content_type):
+        def create_feign_method(http_method, path, content_type, original_method):
+          # 获取原始方法的签名，用于映射位置参数到参数名
+          sig = inspect.signature(original_method)
+          
           async def feign_method(self, *args, **kwargs):
             try:
-              # 提取实际参数（处理dataclass对象）
+              # 提取实际参数（处理位置参数和dataclass对象）
               actual_kwargs = {}
               
-              # 检查是否有dataclass类型的参数
+              # 处理位置参数，将它们映射到参数名
+              if args:
+                # 获取参数名列表（排除self）
+                param_names = list(sig.parameters.keys())[1:]  # 排除第一个参数self
+                
+                # 将位置参数映射到参数名
+                for i, arg in enumerate(args):
+                  if i < len(param_names):
+                    param_name = param_names[i]
+                    actual_kwargs[param_name] = arg
+              
+              # 处理关键字参数
               for key, value in kwargs.items():
                 # 检查是否是dataclass对象
                 if hasattr(value, '__dataclass_fields__'):
@@ -259,7 +274,7 @@ class FeignClient:
               raise e
           return feign_method
 
-        new_method = create_feign_method(http_method, path, content_type)
+        new_method = create_feign_method(http_method, path, content_type, method)
 
         # 替换原方法为新的HTTP请求实现
         setattr(cls, name, new_method)
@@ -303,15 +318,18 @@ async def main():
   client = TestClient()
   # print('get_posts')
   # print(await client.get_posts())
-  # print("获取帖子ID为1的所有评论:")
-  # comments = await client.get_comments(req=ReqModel(postId=1))
-  # print(comments)
+  print("获取帖子ID为1的所有评论:")
+  comments = await client.get_comment2s(postId=1)
+  print(comments)
+  print("获取帖子ID为1的所有评论:")
+  comments = await client.get_comment2s(1)
+  print(comments)
   # print("创建新帖子:")
   # new_post = await client.post_posts(req=ReqModel(title="新帖子", body="这是新帖子的内容"))
   # print(new_post)
-  print("更新帖子ID为1的内容:")
-  updated_post = await client.put_posts(id=1, req=ReqModel(title="更新后的帖子", body="这是更新后的帖子内容"))
-  print(updated_post)
+  # print("更新帖子ID为1的内容:")
+  # updated_post = await client.put_posts(id=1, req=ReqModel(title="更新后的帖子", body="这是更新后的帖子内容"))
+  # print(updated_post)
 
 if __name__ == "__main__":
   asyncio.run(main())
