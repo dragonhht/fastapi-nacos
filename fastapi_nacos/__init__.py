@@ -22,6 +22,15 @@ from fastapi_nacos.utils.exceptions import (
     ConfigListenerError,
     HeartbeatError
 )
+from fastapi_nacos.http.http_client import (
+  FeignClient,
+  GetMapping,
+  PostMapping,
+  PutMapping,
+  DeleteMapping
+)
+
+from fastapi_nacos.core.value import Value
 
 __version__ = "0.1.0"
 __all__ = [
@@ -54,5 +63,15 @@ __all__ = [
     "ServiceDiscoveryError",
     "ConfigError",
     "ConfigListenerError",
-    "HeartbeatError"
+    "HeartbeatError",
+    
+    # HTTP客户端
+    "FeignClient",
+    "GetMapping",
+    "PostMapping",
+    "PutMapping",
+    "DeleteMapping",
+    
+    # 配置值装饰器
+    "Value"
 ]

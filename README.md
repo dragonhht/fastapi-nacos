@@ -5,11 +5,9 @@
 ## 功能特性
 
 - **服务注册**：自动将 FastAPI 应用注册到 Nacos 服务注册中心，包含服务元数据管理、健康检查机制及服务心跳维持
-- **服务发现**：提供便捷的 API 用于查询 Nacos 注册中心中的其他服务实例信息，支持按服务名、分组等条件筛选
+- **服务发现**：提供便捷的 API 用于查询 Nacos 注册中心中的其他服务实例信息
 - **配置中心**：实现从 Nacos 配置中心动态获取、监听和更新配置信息，支持配置的热加载而无需重启应用
 - **FastAPI 集成**：兼容 FastAPI 的依赖注入系统，方便在 FastAPI 应用中使用
-- **完善的日志记录**：提供详细的日志记录，方便调试和问题排查
-- **错误处理**：完善的异常处理机制，提供清晰的错误信息
 
 ## 安装
 
@@ -65,79 +63,45 @@ from fastapi_nacos import init_nacos_with_fastapi
 
 # 初始化FastAPI应用
 app = FastAPI()
-# 自动初始化Nacos客户端，检测到存在对应的环境变量会自动初始化
+# 自动初始化Nacos客户端，检测到存在对应的配置项会自动初始化服务注册、服务发现、配置中心功能
 init_nacos_with_fastapi(app)
 ```
 
-### 2. 服务注册
+### 2. 配置参数获取
+
+- 使用**Value**：从 Nacos 配置中心获取配置项值，如以下示例，从配置中心获取 `api.name` 配置项的值
 
 ```python
-# 注册服务
-nacos_client.register_service(
-    service_name="fastapi-service",
-    ip="127.0.0.1",
-    port=8000,
-    metadata={"version": "1.0.0", "env": "dev"},
-    fastapi_app=app  # 可选，自动在应用启动和关闭时管理服务注册
-)
+from fastapi_nacos import Value
+
+# 定义一个函数，用于获取配置项api.name的值
+@Value("${api.name}")
+def api_name():
+  pass
+
+# 调用
+name = api_name()
+print(name)
 ```
 
-### 3. 服务发现
+### 3. Feign 客户端调用
+
+- 使用**FeignClient**：定义一个 Feign 客户端类，用于调用其他服务的 RESTful API，如以下示例，定义一个 Feign 客户端类 `TestClient`，用于调用 `fastapi-nacos` 服务的 `/hello` 接口
 
 ```python
-# 获取服务实例列表
-instances = nacos_client.get_service_instances(
-    service_name="other-service",
-    healthy_only=True  # 只获取健康实例
-)
+from fastapi_nacos import FeignClient, GetMapping
 
-# 选择一个服务实例（支持负载均衡）
-instance = nacos_client.choose_one_instance(
-    service_name="other-service",
-    strategy="weight_random"  # 加权随机策略
-)
+# 定义一个 Feign 客户端类，用于调用其他服务的 RESTful API, base_url传入非http开头的服务名，会自动从服务注册中心获取服务实例的ip和port，否则直接使用base_url
+@FeignClient(base_url="fastapi-nacos")
+class TestClient:
+    @GetMapping("/hello")
+    async def get_hello(self, name: str) -> dict:
+        pass
+
+# 调用
+test_client = TestClient()
+response = await test_client.get_hello(name=name)
 ```
-
-### 4. 配置中心
-
-```python
-# 获取配置
-config = nacos_client.get_config(
-    data_id="fastapi-config",
-    group="DEFAULT_GROUP"
-)
-
-# 获取配置并转换为字典
-config_dict = nacos_client.get_config_dict(
-    data_id="fastapi-config",
-    group="DEFAULT_GROUP"
-)
-
-# 设置配置
-nacos_client.set_config(
-    data_id="fastapi-config",
-    group="DEFAULT_GROUP",
-    content="{\"key\": \"value\"}"
-)
-
-# 监听配置变更
-def config_callback(content):
-    print(f"配置变更: {content}")
-
-nacos_client.add_config_listener(
-    data_id="fastapi-config",
-    group="DEFAULT_GROUP",
-    callback=config_callback
-)
-```
-
-## FastAPI 依赖注入
-
-SDK 提供了 FastAPI 依赖注入支持，可以方便地在路由中使用：
-
-## 配置选项
-
-可以通过环境变量配置：
 
 ## 开发
 
@@ -145,12 +109,6 @@ SDK 提供了 FastAPI 依赖注入支持，可以方便地在路由中使用：
 
 ```bash
 uv install
-```
-
-### 运行测试
-
-```bash
-uv run pytest
 ```
 
 ### 构建包
