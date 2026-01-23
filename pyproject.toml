@@ -1,7 +1,7 @@
 [project]
 name = "fastapi-nacos"
 version = "0.1.0"
-description = "Add your description here"
+description = "FastAPI Nacos SDK"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -16,6 +16,9 @@ dependencies = [
     "httpx>=0.28.1",
     "dataclasses>=0.8",
 ]
+
+[tool.setuptools]
+packages = ["fastapi_nacos"]
 
 [tool.pytest.ini_options]
 pythonpath = ""
