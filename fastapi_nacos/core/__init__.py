@@ -41,6 +41,11 @@ async def init_config_client():
     log.info("开始初始化Nacos配置中心监听...")
     await init_watch_config()
 
+async def parse_update_config(namespace: str, data_id: str, group: str = "DEFAULT_GROUP", content: str = None):
+  """解析并更新Nacos配置"""
+  await NacosClientManager.get_instance().parse_config_content(data_id, group, content)
+    
+
 async def init_watch_config():
   """初始化Nacos配置中心监听"""
   imports = app_config.get("nacos.config.imports")
@@ -50,20 +55,18 @@ async def init_watch_config():
     log.info("开始初始化Nacos配置中心监听...")
     for item in imports:
       data_id = item.get("data-id")
+      group = item.get("group", "DEFAULT_GROUP")
       if not data_id:
         log.warning(f"nacos.config.imports.item.data-id未配置，跳过Nacos配置中心监听初始化: {item}")
         continue
-      # 获取配置
-      await NacosClientManager.get_instance().config.get_config(
-        group=item.get("group", "DEFAULT_GROUP"),
-        data_id=data_id,
-      )
-      # TODO 这里需要根据实际情况处理配置内容
+      # 初始化时获取配置
+      await NacosClientManager.get_instance().fetch_and_parse_config(data_id=data_id, group=group)
+      # 添加监听，当配置变化时变更配置数据
       await NacosClientManager.get_instance().config.add_listener(
         ConfigListener(
-          group=item.get("group", "DEFAULT_GROUP"),
+          group=group,
           data_id=data_id,
-          callback=lambda tenant, data_id, group, content: print("listen, tenant:{} data_id:{} group:{} content:{}".format(tenant, data_id, group, content))
+          callback=parse_update_config
         )
       )
     log.info("Nacos配置中心监听初始化完成")

@@ -159,6 +159,57 @@ class AppConfig:
         """
         return yaml.dump(self._config, default_flow_style=False, allow_unicode=True)
 
+def parse_yaml_content(config_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """解析 YAML 内容
+    
+    Args:
+        config_dict: 包含 YAML 内容的字典
+        
+    Returns:
+        解析后的配置字典
+    """
+    # Process the config with multiple iterations to handle dependencies
+    max_iterations = 10
+    current_config = config_dict
+    
+    for iteration in range(max_iterations):
+        # Create a flat lookup of the current config state
+        def create_flat_lookup(cfg, prefix=''):
+            lookup = {}
+            for k, v in cfg.items():
+                full_key = f"{prefix}.{k}" if prefix else k
+                if isinstance(v, dict):
+                    lookup.update(create_flat_lookup(v, full_key))
+                elif isinstance(v, list):
+                    # Store the list as-is
+                    lookup[full_key] = v
+                else:
+                    lookup[full_key] = v
+            return lookup
+        
+        flat_lookup = create_flat_lookup(current_config)
+        
+        # Process the config with the current flat lookup
+        def process_recursive(obj):
+            if isinstance(obj, str):
+                return substitute_env_vars(obj, flat_lookup)
+            elif isinstance(obj, dict):
+                return {k: process_recursive(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [process_recursive(item) for item in obj]
+            else:
+                return obj
+        
+        new_config = process_recursive(current_config)
+        
+        # If no changes, we're done
+        if new_config == current_config:
+            break
+            
+        current_config = new_config
+    
+    return current_config
+
 def read_yaml_file(file_path: str) -> Dict[str, Any]:
     """读取 YAML 配置文件并替换环境变量
     
@@ -179,48 +230,8 @@ def read_yaml_file(file_path: str) -> Dict[str, Any]:
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
-            
-            # Process the config with multiple iterations to handle dependencies
-            max_iterations = 10
-            current_config = config_dict
-            
-            for iteration in range(max_iterations):
-                # Create a flat lookup of the current config state
-                def create_flat_lookup(cfg, prefix=''):
-                    lookup = {}
-                    for k, v in cfg.items():
-                        full_key = f"{prefix}.{k}" if prefix else k
-                        if isinstance(v, dict):
-                            lookup.update(create_flat_lookup(v, full_key))
-                        elif isinstance(v, list):
-                            # Store the list as-is
-                            lookup[full_key] = v
-                        else:
-                            lookup[full_key] = v
-                    return lookup
-                
-                flat_lookup = create_flat_lookup(current_config)
-                
-                # Process the config with the current flat lookup
-                def process_recursive(obj):
-                    if isinstance(obj, str):
-                        return substitute_env_vars(obj, flat_lookup)
-                    elif isinstance(obj, dict):
-                        return {k: process_recursive(v) for k, v in obj.items()}
-                    elif isinstance(obj, list):
-                        return [process_recursive(item) for item in obj]
-                    else:
-                        return obj
-                
-                new_config = process_recursive(current_config)
-                
-                # If no changes, we're done
-                if new_config == current_config:
-                    break
-                    
-                current_config = new_config
-            
-            return current_config
+            # 解析 YAML 内容
+            return parse_yaml_content(config_dict)
     except yaml.YAMLError as e:
         raise yaml.YAMLError(f"YAML 格式错误: {e}")
     except IOError as e:

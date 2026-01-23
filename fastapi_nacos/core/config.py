@@ -1,9 +1,8 @@
-import threading
 import json
 import yaml
 from typing import Dict, Optional
 from v2.nacos import NacosConfigService
-from fastapi_nacos.models.config import ConfigRequest, ConfigListener
+from fastapi_nacos.models.config import ConfigListener
 from fastapi_nacos.utils.exceptions import ConfigError, ConfigListenerError
 
 
@@ -29,10 +28,6 @@ class ConfigManager:
         self.username = username
         self.password = password
         self.config_listeners: Dict[str, ConfigListener] = {}  # 配置监听器
-        self.config_cache: Dict[str, str] = {}  # 配置缓存
-        self.listener_threads: Dict[str, threading.Thread] = {}  # 监听器线程
-        self.listener_stop_events: Dict[str, threading.Event] = {}  # 监听器停止事件
-        self.listener_interval = 3  # 监听间隔，单位：秒
     
     async def get_config(self, data_id: str, group: str = "DEFAULT_GROUP") -> Optional[str]:
         """
@@ -57,10 +52,6 @@ class ConfigManager:
             content = await self.config_service.get_config(config_param)
             
             self.logger.debug(f"配置获取结果: {content}")
-            
-            # 更新缓存
-            cache_key = f"{group}:{data_id}"
-            self.config_cache[cache_key] = content
             
             self.logger.info(f"配置获取成功: data_id={data_id}")
             return content
@@ -184,56 +175,6 @@ class ConfigManager:
             listener_key: 监听器键
         """
         self.logger.info(f"配置监听器 {listener_key} 由Nacos SDK内部管理")
-    
-    async def refresh_config_cache(self, data_id: str, group: str = "DEFAULT_GROUP", namespace: str = "") -> bool:
-        """
-        刷新配置缓存
-        
-        Args:
-            data_id: 配置ID
-            group: 配置分组
-            namespace: 命名空间ID
-            
-        Returns:
-            bool: 刷新是否成功
-        """
-        try:
-            request = ConfigRequest(
-                data_id=data_id,
-                group=group,
-                namespace=namespace
-            )
-            
-            content = await self.get_config(request)
-            self.logger.info(f"配置缓存刷新成功: data_id={data_id}")
-            return True
-        except Exception as e:
-            self.logger.error(f"刷新配置缓存失败: data_id={data_id}，错误: {str(e)}")
-            return False
-    
-    def get_cache(self) -> Dict[str, str]:
-        """
-        获取配置缓存
-        
-        Returns:
-            Dict[str, str]: 配置缓存
-        """
-        return self.config_cache
-    
-    def clear_cache(self) -> bool:
-        """
-        清除配置缓存
-        
-        Returns:
-            bool: 清除是否成功
-        """
-        try:
-            self.config_cache.clear()
-            self.logger.info("配置缓存清除成功")
-            return True
-        except Exception as e:
-            self.logger.error(f"清除配置缓存失败: {str(e)}")
-            return False
 
     async def shutdown(self):
         """
