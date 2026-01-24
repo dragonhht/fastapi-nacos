@@ -1,7 +1,13 @@
 import os
+import sys
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+# 获取当前项目的绝对路径
+startup_file = os.path.abspath(sys.argv[0])
+root_dir = os.path.dirname(startup_file)
+
+# 加载项目根目录下的.env文件
+load_dotenv(os.path.join(root_dir, '.env'), override=True)
 
 # 注册中心配置
 discovery_server_addresses = os.getenv("NACOS_DISCOVERY_SERVER_ADDRESSES")

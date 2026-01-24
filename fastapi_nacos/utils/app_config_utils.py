@@ -291,7 +291,9 @@ def load_config() -> AppConfig:
         Exception: 配置加载失败
     """
     try:
-        config_path = get_var("FASTAPI_NACOS_CONFIG_FILE", "conf/app.yml")
+        startup_file = os.path.abspath(sys.argv[0])
+        root_dir = os.path.dirname(startup_file)
+        config_path = get_var("FASTAPI_NACOS_CONFIG_FILE", os.path.join(root_dir, "conf", "app.yml"))
         print(f"正在加载配置文件: {config_path}")
         
         # 读取 YAML 配置

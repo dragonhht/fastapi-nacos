@@ -3,11 +3,16 @@ from loguru import logger
 from fastapi_nacos.config import app_config
 
 # 获取当前项目的绝对路径
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+startup_file = os.path.abspath(sys.argv[0])
+root_dir = os.path.dirname(startup_file)
 
 # 从配置中获取日志级别
 log_level = app_config.get("logging.level", "DEBUG")
 log_file = app_config.get("logging.file", os.path.join(root_dir, "logs", "app.log"))
+
+# 处理相对路径和绝对路径
+if log_file and not os.path.isabs(log_file):
+    log_file = os.path.join(root_dir, log_file)
 
 log_dir = os.path.dirname(log_file)
 if log_dir:  # 避免空路径
