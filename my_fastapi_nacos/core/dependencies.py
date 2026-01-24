@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import Depends, HTTPException, status
-from fastapi_nacos.core import NacosClientManager
+from my_fastapi_nacos.core import NacosClientManager
 
 # 全局Nacos客户端实例
 _nacos_client_manager: Optional[NacosClientManager] = None

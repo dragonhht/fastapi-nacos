@@ -1,8 +1,11 @@
 [project]
-name = "fastapi-nacos"
-version = "0.1.0"
+name = "my-fastapi-nacos"
+version = "0.1.1"
 description = "FastAPI Nacos SDK"
 readme = "README.md"
+authors = [
+    {name = "CarlosHuang", email = "dragon_hht@163.com"}
+]
 requires-python = ">=3.10"
 dependencies = [
     "nacos-sdk-python==2.0.9",
@@ -18,7 +21,15 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["fastapi_nacos"]
+packages = [
+    "my_fastapi_nacos",
+    "my_fastapi_nacos.config",
+    "my_fastapi_nacos.core",
+    "my_fastapi_nacos.http",
+    "my_fastapi_nacos.models",
+    "my_fastapi_nacos.utils"
+]
+package-dir = {"" = "."}
 
 [tool.pytest.ini_options]
 pythonpath = ""

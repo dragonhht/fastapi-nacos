@@ -3,8 +3,7 @@ import time
 import threading
 from typing import Dict, Optional
 from v2.nacos import NacosNamingService
-from fastapi_nacos.models.service import ServiceRegisterRequest, ServiceInstance
-from fastapi_nacos.utils.exceptions import ServiceRegistrationError, HeartbeatError
+from my_fastapi_nacos.utils.exceptions import ServiceRegistrationError
 
 
 class ServiceRegistry:

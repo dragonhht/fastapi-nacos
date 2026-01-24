@@ -148,7 +148,7 @@ class FeignClient:
       raise ServiceDiscoveryError("服务名未设置")
     
     # 直接使用全局Nacos客户端实例
-    from fastapi_nacos.core.dependencies import get_nacos_client_no_exception
+    from my_fastapi_nacos.core.dependencies import get_nacos_client_no_exception
     client = get_nacos_client_no_exception()
     
     service_discovery = client.discovery

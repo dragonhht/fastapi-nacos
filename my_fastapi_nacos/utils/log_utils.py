@@ -1,6 +1,6 @@
 import sys, os
 from loguru import logger
-from fastapi_nacos.config import app_config
+from my_fastapi_nacos.config import app_config
 
 # 获取当前项目的绝对路径
 startup_file = os.path.abspath(sys.argv[0])

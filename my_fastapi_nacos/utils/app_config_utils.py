@@ -6,7 +6,7 @@ import os
 import sys
 import yaml
 import re
-from fastapi_nacos.utils.env_utils import get_var
+from my_fastapi_nacos.utils.env_utils import get_var
 from typing import Dict, Any, Union
 
 # 环境变量引用正则表达式: ${ENV_VAR:default_value}

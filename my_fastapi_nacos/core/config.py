@@ -2,8 +2,8 @@ import json
 import yaml
 from typing import Dict, Optional
 from v2.nacos import NacosConfigService
-from fastapi_nacos.models.config import ConfigListener
-from fastapi_nacos.utils.exceptions import ConfigError, ConfigListenerError
+from my_fastapi_nacos.models.config import ConfigListener
+from my_fastapi_nacos.utils.exceptions import ConfigError, ConfigListenerError
 
 
 class ConfigManager:

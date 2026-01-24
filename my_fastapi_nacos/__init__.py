@@ -1,19 +1,19 @@
 # 导出主要类和功能
-from fastapi_nacos.core import (
+from my_fastapi_nacos.core import (
     NacosClientManager,
     nacos_lifespan,
     init_nacos_with_fastapi,
 )
-from fastapi_nacos.core.dependencies import (
+from my_fastapi_nacos.core.dependencies import (
     init_nacos_registry_discovery_client,
     get_nacos_client,
     get_service_registry,
     get_service_discovery,
     get_config_manager
 )
-from fastapi_nacos.models.service import ServiceInstance, ServiceRegisterRequest, ServiceInfo
-from fastapi_nacos.models.config import ConfigRequest, ConfigResponse, ConfigListener
-from fastapi_nacos.utils.exceptions import (
+from my_fastapi_nacos.models.service import ServiceInstance, ServiceRegisterRequest, ServiceInfo
+from my_fastapi_nacos.models.config import ConfigRequest, ConfigResponse, ConfigListener
+from my_fastapi_nacos.utils.exceptions import (
     FastApiNacosException,
     NacosConnectionError,
     ServiceRegistrationError,
@@ -22,7 +22,7 @@ from fastapi_nacos.utils.exceptions import (
     ConfigListenerError,
     HeartbeatError
 )
-from fastapi_nacos.http.http_client import (
+from my_fastapi_nacos.http.http_client import (
   FeignClient,
   GetMapping,
   PostMapping,
@@ -30,7 +30,7 @@ from fastapi_nacos.http.http_client import (
   DeleteMapping
 )
 
-from fastapi_nacos.core.value import Value
+from my_fastapi_nacos.core.value import Value
 
 __version__ = "0.1.0"
 __all__ = [

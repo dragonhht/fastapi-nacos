@@ -2,8 +2,8 @@ import random
 import time
 from typing import List, Optional, Dict
 from v2.nacos import NacosNamingService
-from fastapi_nacos.models.service import ServiceInstance, ServiceInfo
-from fastapi_nacos.utils.exceptions import ServiceDiscoveryError
+from my_fastapi_nacos.models.service import ServiceInstance, ServiceInfo
+from my_fastapi_nacos.utils.exceptions import ServiceDiscoveryError
 
 
 class ServiceDiscovery:

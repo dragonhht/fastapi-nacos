@@ -7,20 +7,19 @@
 - **服务注册**：自动将 FastAPI 应用注册到 Nacos 服务注册中心，包含服务元数据管理、健康检查机制及服务心跳维持
 - **服务发现**：提供便捷的 API 用于查询 Nacos 注册中心中的其他服务实例信息
 - **配置中心**：实现从 Nacos 配置中心动态获取、监听和更新配置信息，支持配置的热加载而无需重启应用
-- **FastAPI 集成**：兼容 FastAPI 的依赖注入系统，方便在 FastAPI 应用中使用
 
 ## 安装
 
 使用 pip 安装：
 
 ```bash
-pip install fastapi-nacos
+pip install my-fastapi-nacos
 ```
 
 或者使用 uv 安装：
 
 ```bash
-uv add fastapi-nacos
+uv add my-fastapi-nacos
 ```
 
 ## 配置项
@@ -59,7 +58,7 @@ nacos:
 
 ```python
 from fastapi import FastAPI
-from fastapi_nacos import init_nacos_with_fastapi
+from my_fastapi_nacos import init_nacos_with_fastapi
 
 # 初始化FastAPI应用
 app = FastAPI()
@@ -72,7 +71,7 @@ init_nacos_with_fastapi(app)
 - 使用**Value**：从 Nacos 配置中心获取配置项值，如以下示例，从配置中心获取 `api.name` 配置项的值
 
 ```python
-from fastapi_nacos import Value
+from my_fastapi_nacos import Value
 
 # 定义一个函数，用于获取配置项api.name的值
 @Value("${api.name}")
@@ -89,7 +88,7 @@ print(name)
 - 使用**FeignClient**：定义一个 Feign 客户端类，用于调用其他服务的 RESTful API，如以下示例，定义一个 Feign 客户端类 `TestClient`，用于调用 `fastapi-nacos` 服务的 `/hello` 接口
 
 ```python
-from fastapi_nacos import FeignClient, GetMapping
+from my_fastapi_nacos import FeignClient, GetMapping
 
 # 定义一个 Feign 客户端类，用于调用其他服务的 RESTful API, base_url传入非http开头的服务名，会自动从服务注册中心获取服务实例的ip和port，否则直接使用base_url
 @FeignClient(base_url="fastapi-nacos")
@@ -108,7 +107,7 @@ response = await test_client.get_hello(name=name)
 ### 安装依赖
 
 ```bash
-uv install
+uv sync
 ```
 
 ### 构建包

@@ -1,11 +1,11 @@
-from fastapi_nacos.core.manager import NacosClientManager
-from fastapi_nacos.core.dependencies import init_nacos_registry_discovery_client, init_nacos_config_client
+from my_fastapi_nacos.core.manager import NacosClientManager
+from my_fastapi_nacos.core.dependencies import init_nacos_registry_discovery_client, init_nacos_config_client
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi_nacos.models.config import ConfigListener
-from fastapi_nacos.utils.log_utils import log
-from fastapi_nacos.config import app_config
-from fastapi_nacos.utils.ip_utils import get_ip_address
+from my_fastapi_nacos.models.config import ConfigListener
+from my_fastapi_nacos.utils.log_utils import log
+from my_fastapi_nacos.config import app_config
+from my_fastapi_nacos.utils.ip_utils import get_ip_address
 
 global_ip = get_ip_address()
 

@@ -1,13 +1,13 @@
 from typing import Dict, Optional, List, Callable, Any
 from v2.nacos import ClientConfigBuilder, NacosNamingService, NacosConfigService
-from fastapi_nacos.core.registration import ServiceRegistry
-from fastapi_nacos.core.discovery import ServiceDiscovery
-from fastapi_nacos.core.config import ConfigManager
-from fastapi_nacos.models.service import ServiceInstance
-from fastapi_nacos.models.config import ConfigListener
-from fastapi_nacos.utils.log_utils import log, log_dir, log_level
-from fastapi_nacos.utils.exceptions import NacosConnectionError
-from fastapi_nacos.utils.app_config_utils import parse_yaml_content, AppConfig
+from my_fastapi_nacos.core.registration import ServiceRegistry
+from my_fastapi_nacos.core.discovery import ServiceDiscovery
+from my_fastapi_nacos.core.config import ConfigManager
+from my_fastapi_nacos.models.service import ServiceInstance
+from my_fastapi_nacos.models.config import ConfigListener
+from my_fastapi_nacos.utils.log_utils import log, log_dir, log_level
+from my_fastapi_nacos.utils.exceptions import NacosConnectionError
+from my_fastapi_nacos.utils.app_config_utils import parse_yaml_content, AppConfig
 import yaml
 
 class NacosClientManager:

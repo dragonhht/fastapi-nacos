@@ -3,8 +3,8 @@
 """
 
 import re
-from typing import Optional, Callable, Any
-from fastapi_nacos.core.manager import NacosClientManager
+from typing import Callable, Any
+from my_fastapi_nacos.core.manager import NacosClientManager
 
 # 配置值引用正则表达式: ${key:default} 或 ${key}
 CONFIG_VALUE_PATTERN = re.compile(r'^\$\{([a-zA-Z0-9_.]+)(?::([^}]*))?\}$')

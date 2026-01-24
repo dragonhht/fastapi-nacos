@@ -1,5 +1,5 @@
 import socket
-from fastapi_nacos.utils.log_utils import log
+from my_fastapi_nacos.utils.log_utils import log
 
 def get_ip_address(prefer_internal: bool = True) -> str:
         """
