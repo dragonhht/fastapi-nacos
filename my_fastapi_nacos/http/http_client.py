@@ -9,6 +9,7 @@ from typing import Optional, Any
 import enum
 import httpx
 import inspect
+from pydantic import BaseModel
 
 class MediaType(enum.Enum):
   """
@@ -145,7 +146,7 @@ class FeignClient:
       return self.base_url
     
     if not self.service_name:
-      raise ServiceDiscoveryError("服务名未设置")
+      raise ValueError("服务名未设置")
     
     # 直接使用全局Nacos客户端实例
     from my_fastapi_nacos.core.dependencies import get_nacos_client_no_exception
@@ -153,11 +154,11 @@ class FeignClient:
     
     service_discovery = client.discovery
     if service_discovery is None:
-      raise ServiceDiscoveryError("服务发现组件未初始化，请确保应用配置了Nacos服务发现")
+      raise ValueError("服务发现组件未初始化，请确保应用配置了Nacos服务发现")
     
     service_instance = await service_discovery.choose_one_instance(self.service_name)
     if service_instance is None:
-      raise ServiceDiscoveryError(f"未找到服务实例: {self.service_name}")
+      raise ValueError(f"未找到服务实例: {self.service_name}")
     
     # 构建基础URL
     self.base_url = f"http://{service_instance.ip}:{service_instance.port}"
@@ -204,6 +205,10 @@ class FeignClient:
                   # 提取dataclass的字段和值
                   for field_name, field in value.__dataclass_fields__.items():
                     actual_kwargs[field_name] = getattr(value, field_name)
+                # 检查是否是Pydantic BaseModel对象
+                elif isinstance(value, BaseModel):
+                  # 提取Pydantic模型的字段和值
+                  actual_kwargs.update(value.model_dump())
                 else:
                   # 直接使用普通参数
                   actual_kwargs[key] = value
@@ -281,55 +286,67 @@ class FeignClient:
     # 返回增强后的类
     return cls
 
-@dataclass
-class ReqModel:
-  postId: int = None
-  title: str = ''
-  body: str = ''
-  userId: int = 1
+# @dataclass
+# class ReqModel:
+#   postId: int = None
+#   title: str = ''
+#   body: str = ''
+#   userId: int = 1
+
+# class ReqModel2(BaseModel):
+#   postId: int = None
+#   title: str = ''
+#   body: str = ''
+#   userId: int = 1
 
 
-@FeignClient(base_url="https://jsonplaceholder.typicode.com")
-class TestClient:
+# @FeignClient(base_url="https://jsonplaceholder.typicode.com")
+# class TestClient:
 
-  @GetMapping("/posts")
-  async def get_posts(self) -> list:
-    pass
+#   @GetMapping("/posts")
+#   async def get_posts(self) -> list:
+#     pass
   
-  @GetMapping("/posts/{id}")
-  async def get_post(self, id: int) -> dict:
-    pass
+#   @GetMapping("/posts/{id}")
+#   async def get_post(self, id: int) -> dict:
+#     pass
   
-  @GetMapping("/comments")
-  async def get_comments(self, req: ReqModel) -> list:
-    pass
-  @GetMapping("/comments")
-  async def get_comment2s(self, postId: int) -> list:
-    pass
+#   @GetMapping("/comments")
+#   async def get_comments(self, req: ReqModel) -> list:
+#     pass
+#   @GetMapping("/comments")
+#   async def get_comment2s(self, postId: int) -> list:
+#     pass
 
-  @PostMapping("/posts")
-  async def post_posts(self, req: ReqModel) -> dict:
-    pass
-  @PutMapping("/posts/{id}")
-  async def put_posts(self, id: int, req: ReqModel) -> dict:
-    pass
+#   @PostMapping("/posts")
+#   async def post_posts(self, req: ReqModel) -> dict:
+#     pass
+#   @PostMapping("/posts")
+#   async def post_posts2(self, req: ReqModel2) -> dict:
+#     pass
+#   @PutMapping("/posts/{id}")
+#   async def put_posts(self, id: int, req: ReqModel) -> dict:
+#     pass
 
-async def main():
-  client = TestClient()
-  # print('get_posts')
-  # print(await client.get_posts())
-  print("获取帖子ID为1的所有评论:")
-  comments = await client.get_comment2s(postId=1)
-  print(comments)
-  print("获取帖子ID为1的所有评论:")
-  comments = await client.get_comment2s(1)
-  print(comments)
-  # print("创建新帖子:")
-  # new_post = await client.post_posts(req=ReqModel(title="新帖子", body="这是新帖子的内容"))
-  # print(new_post)
-  # print("更新帖子ID为1的内容:")
-  # updated_post = await client.put_posts(id=1, req=ReqModel(title="更新后的帖子", body="这是更新后的帖子内容"))
-  # print(updated_post)
+# async def main():
+#   client = TestClient()
+#   # print('get_posts')
+#   # print(await client.get_posts())
+#   print("获取帖子ID为1的所有评论:")
+#   comments = await client.get_comment2s(postId=1)
+#   print(comments)
+#   print("获取帖子ID为1的所有评论:")
+#   comments = await client.get_comment2s(1)
+#   print(comments)
+#   print("创建新帖子:")
+#   new_post = await client.post_posts(req=ReqModel(title="新帖子", body="这是新帖子的内容"))
+#   print(new_post)
+#   print("创建新帖子2:")
+#   new_post = await client.post_posts(req=ReqModel2(title="新帖子", body="这是新帖子的内容"))
+#   print(new_post)
+#   # print("更新帖子ID为1的内容:")
+#   # updated_post = await client.put_posts(id=1, req=ReqModel(title="更新后的帖子", body="这是更新后的帖子内容"))
+#   # print(updated_post)
 
-if __name__ == "__main__":
-  asyncio.run(main())
+# if __name__ == "__main__":
+#   asyncio.run(main())
